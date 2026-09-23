@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DADOSBET - Sorteos y Premios Exclusivos</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header-dadosbet">
+    <div class="header-container">
+      <div class="logo">
+        <img src="logo.png" alt="DADOSBET" class="site-logo" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='inline-block'">
+        <h1 id="logoFallback">DADOS<span>BET</span></h1>
+      </div>
+
+      <div class="search-bar">
+        <input type="text" id="searchInputMain" placeholder="Buscar premios, camisetas, tecnología...">
+        <button><i class="fa-solid fa-magnifying-glass"></i></button>
+      </div>
+
+      <div class="user-controls">
+        <button class="btn-minigame-header" onclick="abrirMinijuegoDados()" title="Juego del Dado CashBack">
+          <i class="fa-solid fa-dice"></i> <span>Dado CashBack</span>
+        </button>
+
+        <button class="theme-toggle" id="btnThemeToggle" title="Cambiar Tema">
+          <i class="fa-solid fa-moon" id="themeIcon"></i>
+        </button>
+
+        <div id="userAuthArea">
+          <button class="btn-login" onclick="toggleModal('modalLogin')">
+            <i class="fa-solid fa-user"></i> Ingresar
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- BOTÓN FLOTANTE DADO -->
+  <div class="dice-floating-btn" onclick="abrirMinijuegoDados()" title="¡Gana 100% CashBack con el Dado!">
+    <i class="fa-solid fa-dice-six fa-spin-hover"></i>
+    <span class="dice-badge-pulse">100% CASHBACK</span>
+  </div>
+
+  <!-- CARROUSEL HÉROE EN ALTA RESOLUCIÓN -->
+  <section class="hero-carousel">
+    <div class="carousel-track" id="carouselTrack"></div>
+    <button class="carousel-btn prev" onclick="moveSlide(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+    <button class="carousel-btn next" onclick="moveSlide(1)"><i class="fa-solid fa-chevron-right"></i></button>
+    <div class="carousel-indicators" id="carouselIndicators"></div>
+  </section>
+
+  <main class="container">
+    <div class="section-header">
+      <h2><i class="fa-solid fa-fire"></i> Sorteos Destacados</h2>
+      <p>Selecciona tu premio y elige tu número afortunado</p>
+    </div>
+
+    <!-- GRID DE PRODUCTOS -->
+    <section class="grid-productos" id="gridProductos"></section>
+  </main>
+
+  <!-- MODAL SELECCIÓN DE NÚMEROS Y GALERÍA -->
+  <div class="modal-overlay" id="modalNumeros">
+    <div class="modal-content modal-large">
+      <button class="btn-close" onclick="toggleModal('modalNumeros')">&times;</button>
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <h2 id="modalPremioTitulo" style="margin: 0;">Elegí tu número</h2>
+        <span id="modalPremioNivelVip" class="vip-badge vip-1">Bronce</span>
+      </div>
+      <p class="modal-sub">
+        Mínimo de carga requerido: <strong id="modalPremioMonto">$0</strong> | 
+        <i class="fa-solid fa-stopwatch" style="color: var(--accent-yellow);"></i> Tiempo restante: 
+        <strong id="modalPremioFecha" style="color: var(--accent-yellow);">---</strong>
+      </p>
+
+      <div class="galeria-producto">
+        <div class="img-principal-container">
+          <button class="modal-carousel-arrow prev" onclick="moverCarruselModal(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+          <img id="modalPremioImgPrincipal" src="" alt="Producto">
+          <button class="modal-carousel-arrow next" onclick="moverCarruselModal(1)"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <div class="miniaturas-container" id="modalPremioMiniaturas"></div>
+      </div>
+      
+      <div class="user-ticket-info">
+        <span>Tus Tickets Disponibles: <strong id="modalUserTickets" class="highlight-yellow">0</strong></span>
+        <span style="margin-left: 15px;">Tu Rango: <strong id="modalUserVipBadge" class="vip-badge vip-1">Bronce</strong></span>
+      </div>
+
+      <div class="grid-numeros-container" id="gridNumeros"></div>
+
+      <div class="form-reserva">
+        <input type="hidden" id="inputNumeroSeleccionado">
+        <input type="hidden" id="inputPremioIdSeleccionado">
+        <button class="btn-confirmar" id="btnConfirmarReserva" onclick="confirmarReservaFirebase()">
+          <i class="fa-solid fa-ticket"></i> Usar Ticket y Confirmar Número
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL AUTENTICACIÓN -->
+  <div class="modal-overlay" id="modalLogin">
+    <div class="modal-card-modern">
+      <button class="btn-close-modern" onclick="toggleModal('modalLogin')">&times;</button>
+      
+      <div class="auth-header">
+        <div class="auth-logo">DADOS<span>BET</span></div>
+        <p class="auth-subtitle">Ingresa a tu cuenta para participar de los sorteos</p>
+      </div>
+
+      <div class="auth-pills-nav">
+        <button class="pill-btn active" id="tabIngresar" onclick="switchAuthTab('login')">
+          <i class="fa-solid fa-right-to-bracket"></i> Ingresar
+        </button>
+        <button class="pill-btn" id="tabRegistro" onclick="switchAuthTab('registro')">
+          <i class="fa-solid fa-user-plus"></i> Registrarse
+        </button>
+      </div>
+
+      <form id="formLogin" class="auth-form-body" onsubmit="event.preventDefault(); loginFirebase();">
+        <div class="input-group-modern">
+          <i class="fa-solid fa-envelope input-icon"></i>
+          <input type="email" id="loginEmail" placeholder="Correo Electrónico" required>
+        </div>
+        <div class="input-group-modern">
+          <i class="fa-solid fa-lock input-icon"></i>
+          <input type="password" id="loginPass" placeholder="Contraseña" required>
+        </div>
+        <button type="submit" class="btn-modern-primary">
+          Entrar a mi Cuenta <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <form id="formRegistro" class="auth-form-body" style="display: none;" onsubmit="event.preventDefault(); registroFirebase();">
+        <div class="input-group-modern">
+          <i class="fa-solid fa-user input-icon"></i>
+          <input type="text" id="regUsuario" placeholder="Nombre de Usuario" required>
+        </div>
+        <div class="input-group-modern">
+          <i class="fa-solid fa-envelope input-icon"></i>
+          <input type="email" id="regEmail" placeholder="Correo Electrónico" required>
+        </div>
+        <div class="input-group-modern">
+          <i class="fa-solid fa-lock input-icon"></i>
+          <input type="password" id="regPass" placeholder="Contraseña" required>
+        </div>
+        <button type="submit" class="btn-modern-primary">
+          Crear Cuenta <i class="fa-solid fa-check"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PANEL DE USUARIO FULLSCREEN -->
+  <div class="admin-fullscreen-modal" id="modalUserFullscreen">
+    <div class="admin-dashboard-container">
+      <aside class="admin-sidebar" id="userSidebarMobile">
+        <div class="admin-sidebar-header">
+          <h2>Mi Cuenta</h2>
+          <p id="userPanelSub">DADOSBET User</p>
+        </div>
+
+        <nav class="admin-menu">
+          <button class="admin-nav-item active" onclick="switchUserTab('perfil')">
+            <i class="fa-solid fa-id-card"></i> Mi Perfil
+          </button>
+          <button class="admin-nav-item" onclick="switchUserTab('sorteos-activos')">
+            <i class="fa-solid fa-fire"></i> Sorteos Activos
+          </button>
+          <button class="admin-nav-item" onclick="switchUserTab('sorteos-participando')">
+            <i class="fa-solid fa-ticket"></i> Sorteos Participando
+          </button>
+          <button class="admin-nav-item" onclick="switchUserTab('historial-numeros')">
+            <i class="fa-solid fa-clock-rotate-left"></i> Historial de Números
+          </button>
+          <button class="admin-nav-item highlight-dice-menu" onclick="abrirMinijuegoDados()">
+            <i class="fa-solid fa-dice"></i> Minijuego de Dados
+          </button>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+          <div id="adminTriggerFromUser" style="display:none; margin-bottom:10px;">
+            <button class="btn-admin-panel" onclick="toggleModal('modalUserFullscreen'); toggleModal('modalAdminFullscreen');">
+              <i class="fa-solid fa-shield-halved"></i> Panel Admin
+            </button>
+          </div>
+          <button class="btn-exit-admin" onclick="logoutFirebase()">
+            <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+          </button>
+          <button class="btn-exit-admin" style="color:#666;" onclick="toggleModal('modalUserFullscreen')">
+            <i class="fa-solid fa-xmark"></i> Salir
+          </button>
+        </div>
+      </aside>
+
+      <main class="admin-content-area" id="userContentAreaMobile">
+        <button class="btn-back-mobile" onclick="volverMenuUsuarioMobile()">
+          <i class="fa-solid fa-arrow-left"></i> Volver al Menú
+        </button>
+
+        <section id="userTab-perfil" class="user-tab-pane active">
+          <h2>Información del Usuario</h2>
+          <div class="admin-form-box">
+            <p><strong>Nombre de Usuario:</strong> <span id="uPerfName">---</span></p>
+            <p><strong>Email:</strong> <span id="uPerfEmail">---</span></p>
+            <p><strong>Rango VIP:</strong> <span id="uPerfVip" class="vip-badge vip-1">Bronce</span></p>
+            <p><strong>Tickets Disponibles:</strong> <span id="uPerfTickets" class="highlight-yellow" style="font-size: 20px;">0</span></p>
+            <p><strong>Chances en Dado CashBack:</strong> <span id="uPerfDados" class="highlight-yellow" style="font-size: 20px;">0</span></p>
+          </div>
+
+          <div class="admin-form-box" style="margin-top:15px;">
+            <h3>Progreso de Rango VIP</h3>
+            <p style="font-size:13px; color:#666;">Participa en sorteos para subir de rango y desbloquear beneficios exclusivos.</p>
+            <div class="tickets-progress-container">
+              <div class="tickets-labels">
+                <span>Tickets Usados: <strong id="uVipProgressText">0 / 5</strong></span>
+                <span id="uNextVipText">Siguiente: Plata</span>
+              </div>
+              <div class="progress-bar-bg"><div class="progress-bar-fill" id="uVipProgressBar" style="width: 0%;"></div></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="userTab-sorteos-activos" class="user-tab-pane">
+          <h2>Sorteos Activos Disponibles</h2>
+          <div class="grid-productos" id="userActiveSorteosGrid"></div>
+        </section>
+
+        <section id="userTab-sorteos-participando" class="user-tab-pane">
+          <h2>Sorteos en los que estás participando</h2>
+          <div id="userParticipatingList"></div>
+        </section>
+
+        <section id="userTab-historial-numeros" class="user-tab-pane">
+          <h2>Historial de Números Reservados</h2>
+          <div class="table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Sorteo / Premio</th>
+                  <th>Número</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="userNumbersTable"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL MINIJUEGO DE DADO CON PINES Y ANIMACIÓN -->
+  <div class="modal-overlay" id="modalMinijuegoDados">
+    <div class="modal-content modal-large dice-modal-style">
+      <button class="btn-close" onclick="toggleModal('modalMinijuegoDados')">&times;</button>
+
+      <div class="text-center">
+        <h1 class="dice-game-title"><i class="fa-solid fa-dice"></i> MINIJUEGO DADO CASHBACK</h1>
+        <p class="dice-game-subtitle">¡Recupera el 100% de tu depósito perdido!</p>
+      </div>
+
+      <div class="dice-rules-box">
+        <h3><i class="fa-solid fa-circle-info"></i> Reglas de la Promoción "Dado CashBack"</h3>
+        <ul>
+          <li><strong>Depósito Elegible:</strong> $10.000 – $50.000 ARS.</li>
+          <li><strong>Condición:</strong> Perder el 100% del depósito te otorga 1 tirada de dado.</li>
+          <li><strong>Premio:</strong> Si tiras el dado y obtienes un <strong>6 (seis pines)</strong>, ¡ganas un bono del <strong>100% CashBack</strong>!</li>
+          <li><strong>Probabilidad de Ganar:</strong> 10% de chance de obtener el 6 afortunado.</li>
+        </ul>
+      </div>
+
+      <div class="text-center" style="margin: 20px 0;">
+        <p style="font-size: 18px;">Tiradas Disponibles: <strong id="diceUserChances" class="highlight-yellow" style="font-size: 24px;">0</strong></p>
+        
+        <div class="dice-container-box">
+          <div class="dice-display" id="diceVisualDisplay">
+            <i class="fa-solid fa-dice"></i>
+          </div>
+        </div>
+
+        <button class="btn-spin-dice" id="btnRollDice" onclick="tirarDadoCashback()">
+          <i class="fa-solid fa-rotate-right"></i> ¡TIRAR EL DADO AHORA!
+        </button>
+      </div>
+
+      <div id="diceGameResultBox" class="dice-result-box" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- POP-UP PROMOCIONAL CLIENTES -->
+  <div class="modal-overlay" id="modalPopUpPromo">
+    <div class="modal-content text-center">
+      <button class="btn-close" onclick="toggleModal('modalPopUpPromo')">&times;</button>
+      <h2 id="promoTitle">¡Promoción Especial!</h2>
+      <img id="promoImage" src="" style="width:100%; max-height: 280px; object-fit: cover; border-radius:8px; margin: 15px 0;">
+      <p id="promoText"></p>
+    </div>
+  </div>
+
+  <!-- PANEL ADMIN FULLSCREEN -->
+  <div class="admin-fullscreen-modal" id="modalAdminFullscreen">
+    <div class="admin-dashboard-container">
+      
+      <aside class="admin-sidebar">
+        <div class="admin-sidebar-header">
+          <h2>Panel Admin</h2>
+          <p>Gestión del sitio</p>
+        </div>
+
+        <nav class="admin-menu">
+          <button class="admin-nav-item active" onclick="switchAdminTab('vista-general')">
+            <i class="fa-solid fa-boxes-stacked"></i> Vista General
+          </button>
+          <button class="admin-nav-item" onclick="switchAdminTab('productos')">
+            <i class="fa-solid fa-box"></i> Productos & Cronograma
+          </button>
+          <button class="admin-nav-item" onclick="switchAdminTab('banners')">
+            <i class="fa-solid fa-images"></i> Banners Promocionales
+          </button>
+          <button class="admin-nav-item" onclick="switchAdminTab('sorteos')">
+            <i class="fa-solid fa-trophy"></i> Hacer Sorteo
+          </button>
+          <button class="admin-nav-item" onclick="switchAdminTab('popup')">
+            <i class="fa-solid fa-bullhorn"></i> Pop-up Promocional
+          </button>
+          <button class="admin-nav-item" onclick="switchAdminTab('usuarios')">
+            <i class="fa-solid fa-users"></i> Lista de Usuarios & Rango VIP
+          </button>
+          <button class="admin-nav-item" onclick="switchAdminTab('niveles-vip')">
+            <i class="fa-solid fa-layer-group"></i> Configurar Rangos VIP
+          </button>
+          <button class="admin-nav-item" onclick="switchAdminTab('historico')">
+            <i class="fa-solid fa-clock-rotate-left"></i> Histórico por Sorteo
+          </button>
+          <button class="admin-nav-item" onclick="switchAdminTab('busqueda')">
+            <i class="fa-solid fa-magnifying-glass"></i> Búsqueda Rápida
+          </button>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+          <button class="btn-exit-admin" onclick="toggleModal('modalAdminFullscreen')">
+            <i class="fa-solid fa-xmark"></i> Salir del Panel
+          </button>
+        </div>
+      </aside>
+
+      <main class="admin-content-area">
+        <section id="adminTab-vista-general" class="admin-tab-pane active">
+          <h2>Vista General</h2>
+          <div class="admin-cards-grid">
+            <div class="admin-card" onclick="switchAdminTab('productos')">
+              <i class="fa-solid fa-box icon-card"></i>
+              <h3>Gestión de Productos</h3>
+              <p>Agregar, editar, configurar imágenes 800x800, cronograma y rango VIP mínimo.</p>
+            </div>
+            <div class="admin-card" onclick="switchAdminTab('banners')">
+              <i class="fa-solid fa-images icon-card"></i>
+              <h3>Banners Promocionales</h3>
+              <p>Gestionar imágenes en alta definición 1920x1080 para el carrusel principal.</p>
+            </div>
+            <div class="admin-card" onclick="switchAdminTab('usuarios')">
+              <i class="fa-solid fa-users icon-card"></i>
+              <h3>Usuarios & Dados</h3>
+              <p>Gestionar tickets, tiradas de dado y asignación de Rangos VIP.</p>
+            </div>
+            <div class="admin-card" onclick="switchAdminTab('sorteos')">
+              <i class="fa-solid fa-trophy icon-card"></i>
+              <h3>Ejecutar Sorteos</h3>
+              <p>Elegir ganadores aleatorios por producto.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- PRODUCTOS CON EDICIÓN Y MÚLTIPLES IMÁGENES -->
+        <section id="adminTab-productos" class="admin-tab-pane">
+          <h2>Gestión de Productos & Cronograma</h2>
+          <div class="admin-form-box">
+            <h3 id="adminFormProdTitle">Agregar Nuevo Producto</h3>
+            <input type="hidden" id="editingProductId" value="">
+            
+            <input type="text" id="newProdName" placeholder="Nombre del Producto / Sorteo">
+            <input type="number" id="newProdPrice" placeholder="Monto mínimo de carga (ARS)">
+            
+            <label style="font-size:12px; font-weight:bold; color:#666; margin-top:5px; display:block;">Fecha / Cronograma del Sorteo:</label>
+            <input type="datetime-local" id="newProdFecha">
+
+            <label style="font-size:12px; font-weight:bold; color:#666; margin-top:5px; display:block;">Rango VIP Mínimo Requerido:</label>
+            <select id="newProdVipReq">
+              <option value="1">Rango Bronce (Todos los usuarios)</option>
+              <option value="2">Rango Plata</option>
+              <option value="3">Rango Oro</option>
+              <option value="4">Rango Platino</option>
+              <option value="5">Rango Maestro (Exclusivo)</option>
+            </select>
+
+            <label style="font-size:12px; font-weight:bold; color:#666; margin-top:10px; display:block;">Imagen Vista Principal / Catálogo (Optimizado 800x800):</label>
+            <input type="text" id="newProdImgCatalog" placeholder="URL Imagen para Catálogo (800x800)">
+
+            <label style="font-size:12px; font-weight:bold; color:#666; margin-top:10px; display:block;">Carrusel / Imágenes Ampliadas para Modal:</label>
+            <input type="text" id="newProdImg1" placeholder="URL Imagen Principal (Alta Calidad)">
+            <input type="text" id="newProdImg2" placeholder="URL Imagen Carrusel 2 (Opcional)">
+            <input type="text" id="newProdImg3" placeholder="URL Imagen Carrusel 3 (Opcional)">
+            <input type="text" id="newProdImg4" placeholder="URL Imagen Carrusel 4 (Opcional)">
+
+            <div style="display:flex; gap:10px; margin-top:10px;">
+              <button class="btn-primary" id="btnSaveProduct" onclick="guardarProductoAdmin()">Guardar Producto</button>
+              <button class="btn-delete-prod" id="btnCancelEditProduct" style="display:none;" onclick="cancelarEdicionProductoAdmin()">Cancelar Edición</button>
+            </div>
+          </div>
+
+          <div class="admin-form-box" style="margin-top: 20px; max-width: 100%;">
+            <h3>Productos en Catálogo</h3>
+            <div id="adminListaProductosGrid" class="admin-products-list"></div>
+          </div>
+        </section>
+
+        <!-- BANNERS -->
+        <section id="adminTab-banners" class="admin-tab-pane">
+          <h2>Banners Promocionales (1920x1080)</h2>
+          <div class="admin-form-box">
+            <h3>Agregar Nuevo Banner al Carrusel</h3>
+            <p style="font-size:12px; color:#666;">Medida recomendada para alta resolución: <strong>1920 x 1080 px</strong></p>
+            <input type="text" id="newBannerUrlInput" placeholder="URL de la Imagen en Alta Calidad">
+            <button class="btn-primary" onclick="agregarBannerAdmin()">Agregar Banner</button>
+          </div>
+
+          <div class="admin-form-box" style="margin-top:20px; max-width: 100%;">
+            <h3>Lista de Banners Activos</h3>
+            <div id="adminBannersList" class="admin-banners-grid"></div>
+          </div>
+        </section>
+
+        <!-- SORTEOS -->
+        <section id="adminTab-sorteos" class="admin-tab-pane">
+          <h2>Hacer Sorteo</h2>
+          <div class="admin-form-box">
+            <h3>Seleccionar Sorteo Finalizado</h3>
+            <select id="selectSorteoElegir"></select>
+            <button class="btn-primary" onclick="ejecutarSorteoAdmin()" style="margin-top:10px;">Sortear Ganador Aleatorio</button>
+            <div id="resultadoGanador" class="resultado-box"></div>
+          </div>
+        </section>
+
+        <!-- POP-UP -->
+        <section id="adminTab-popup" class="admin-tab-pane">
+          <h2>Configurar Pop-up Promocional</h2>
+          <div class="admin-form-box">
+            <label style="display:flex; align-items:center; gap:8px; font-weight:bold; margin-bottom:10px;">
+              <input type="checkbox" id="checkPopUpActive"> Activar Pop-up en el Sitio
+            </label>
+            <input type="text" id="popupTitleAdmin" placeholder="Título de la Promo">
+            <input type="text" id="popupImgAdmin" placeholder="URL de la Imagen">
+            <textarea id="popupTextAdmin" placeholder="Texto descriptivo" rows="3"></textarea>
+            
+            <div style="display:flex; gap:10px; margin-top:10px;">
+              <button class="btn-primary" onclick="guardarPopUpAdmin()">Guardar Pop-up</button>
+              <button class="btn-delete-prod" onclick="eliminarPopUpAdmin()">Eliminar Pop-up</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- LISTA DE USUARIOS -->
+        <section id="adminTab-usuarios" class="admin-tab-pane">
+          <h2>Lista de Usuarios & Rangos VIP</h2>
+          
+          <div class="admin-form-box" style="max-width: 100%;">
+            <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center; margin-bottom:15px;">
+              <div style="flex:1; min-width:200px;">
+                <label style="font-size:12px; font-weight:bold; color:#666;">Filtrar por Rango VIP:</label>
+                <select id="filterUserVipAdmin" onchange="renderizarUsuariosAdmin()">
+                  <option value="all">Todos los Rangos</option>
+                  <option value="1">Bronce</option>
+                  <option value="2">Plata</option>
+                  <option value="3">Oro</option>
+                  <option value="4">Platino</option>
+                  <option value="5">Maestro</option>
+                </select>
+              </div>
+
+              <div style="flex:2; min-width:250px;">
+                <label style="font-size:12px; font-weight:bold; color:#666;">Buscar por Nombre o Email:</label>
+                <input type="text" id="inputSearchUserListAdmin" placeholder="Escribe para filtrar en tiempo real..." onkeyup="renderizarUsuariosAdmin()" style="margin:0;">
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Usuario / Email</th>
+                    <th>Rango VIP</th>
+                    <th>Tickets</th>
+                    <th>Chances Dado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="adminUsersTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONFIGURACIÓN RANGOS VIP -->
+        <section id="adminTab-niveles-vip" class="admin-tab-pane">
+          <h2>Configuración de Evolución de Rangos VIP</h2>
+          <div class="admin-form-box">
+            <p style="font-size:13px; color:#666;">Define cuántos tickets debe usar un usuario para subir de Rango automáticamente.</p>
+            
+            <label>Tickets requeridos para Rango Plata (Nivel 2):</label>
+            <input type="number" id="vipReqLevel2" value="5">
+
+            <label>Tickets requeridos para Rango Oro (Nivel 3):</label>
+            <input type="number" id="vipReqLevel3" value="15">
+
+            <label>Tickets requeridos para Rango Platino (Nivel 4):</label>
+            <input type="number" id="vipReqLevel4" value="30">
+
+            <label>Tickets requeridos para Rango Maestro (Nivel 5):</label>
+            <input type="number" id="vipReqLevel5" value="50">
+
+            <button class="btn-primary" onclick="guardarConfigVipAdmin()">Guardar Reglas VIP</button>
+          </div>
+        </section>
+
+        <!-- HISTÓRICO -->
+        <section id="adminTab-historico" class="admin-tab-pane">
+          <h2>Histórico de Números por Sorteo</h2>
+          <select id="selectHistoricoPremio" onchange="cargarHistoricoPremioAdmin(this.value)"></select>
+          <div class="table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Usuario</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="tableBodyHistorico"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- BÚSQUEDA RÁPIDA DE USUARIOS FUNCIONAL -->
+        <section id="adminTab-busqueda" class="admin-tab-pane">
+          <h2>Búsqueda Rápida de Usuarios</h2>
+          <p style="font-size:13px; color:#666;">Encuentra rápidamente a cualquier usuario para cambiar su rango VIP, cargar tickets o chances de dado.</p>
+          <input type="text" id="inputBusquedaAdmin" placeholder="Buscar por Nombre de Usuario o Correo..." onkeyup="buscarUsuarioAdmin()">
+          <div id="resultadosBusquedaAdmin" class="results-box" style="margin-top: 15px;"></div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR PERFIL USUARIO (SOBREPUESTO CON Z-INDEX SUPERIOR) -->
+  <div class="modal-overlay" id="modalUserProfileAdmin">
+    <div class="modal-content modal-large">
+      <button class="btn-close" onclick="toggleModal('modalUserProfileAdmin')">&times;</button>
+      <h2 id="adminUserProfileName">Perfil de Usuario</h2>
+      <p id="adminUserProfileEmail" style="color:var(--text-muted);"></p>
+      
+      <div class="admin-form-box" style="max-width:100%; margin: 15px 0;">
+        <input type="hidden" id="adminEditUserUid">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
+          <div>
+            <label style="font-size:12px; font-weight:bold;">Rango VIP:</label>
+            <select id="adminEditUserVip">
+              <option value="1">Bronce</option>
+              <option value="2">Plata</option>
+              <option value="3">Oro</option>
+              <option value="4">Platino</option>
+              <option value="5">Maestro</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:bold;">Agregar Tickets:</label>
+            <input type="number" id="adminEditUserTicketsAdd" value="0">
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:bold;">Agregar Chances Dado:</label>
+            <input type="number" id="adminEditUserDiceAdd" value="0">
+          </div>
+        </div>
+        <button class="btn-primary" style="margin-top:10px;" onclick="guardarCambiosUsuarioAdmin()">Guardar Cambios de Usuario</button>
+      </div>
+
+      <h3>Reservas Realizadas</h3>
+      <div class="table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Sorteo / Premio</th>
+              <th>Número</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="adminUserProfileBetsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
